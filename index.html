@@ -137,7 +137,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
         <button type="button" id="langJa" class="active" onclick="setLang('ja')">日本語</button>
         <button type="button" id="langEn" onclick="setLang('en')">English</button>
       </div>
-      <div class="demo">lov_kas DEMO v2.7</div>
+      <div class="demo">lov_kas DEMO v2.8</div>
     </div>
   </div>
 <section id="sendView" class="hidden">
@@ -225,7 +225,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
       <div id="postExample" class="notice">♡KAS → 専用URL</div>
 
       <div class="notice" id="demoUrlNote">
-        このデモでは表示名と受取アドレスをトークン化し、KaspaアドレスをURL上に直接表示しません。
+        このデモでは表示名と受取アドレスを短いトークンに変換し、共有URLは ?p=... のみで生成します。
       </div>
     </div>
 
@@ -268,7 +268,7 @@ const I18N={
     settingsNotice:'ここで表示名とKaspa受取アドレスを設定すると、♡送信用の専用URLが生成されます。この設定画面は受取人本人のみが使用し、専用URLを開いた人には♡送信画面だけが表示されます。',
     nameLabel:'表示名', addressLabel:'Kaspa受取アドレス', createLink:'専用リンクを生成',
     shareUrlLabel:'投稿に貼る専用URL', copy:'コピー', postExampleLabel:'投稿末尾の例', postExample:'♡KAS → 専用URL',
-    demoUrlNote:'このデモでは表示名と受取アドレスをトークン化し、KaspaアドレスをURL上に直接表示しません。',
+    demoUrlNote:'このデモでは表示名と受取アドレスを短いトークンに変換し、共有URLは ?p=... のみで生成します。',
     testSettings:'テスト設定', manualPriceLabel:'手動KAS/USD価格（API失敗時）', manualPriceBtn:'手動価格を使用', resetBtn:'今日の♡カウントをリセット',
     footer1:'lov_kas demo by @techbit', footer2:'♡＝$0.05相当のKAS / Kaspium用QRを常時表示', footer3:'秘密鍵・シードフレーズは入力・保存しません。',
     installLead:'Lov♡Kasを使ってみませんか？',
@@ -295,7 +295,7 @@ const I18N={
     settingsNotice:'Set your display name and Kaspa receiving address here to generate a dedicated ♡-send URL. This settings screen is for the recipient only; anyone opening the generated URL will see only the send screen.',
     nameLabel:'Display name', addressLabel:'Kaspa receiving address', createLink:'Generate share link',
     shareUrlLabel:'Share URL for your post', copy:'Copy', postExampleLabel:'Example at the end of a post', postExample:'♡KAS → Share URL',
-    demoUrlNote:'In this demo, the display name and receiving address are tokenized so the Kaspa address is not shown directly in the URL. In production, a short URL using only a user ID (for example, lov-kas.example/techbit) would be preferable, with the address stored on the server.',
+    demoUrlNote:'In this demo, the display name and receiving address are packed into a compact token, so the share URL contains only ?p=.... In production, a short URL using only a user ID (for example, lov-kas.example/techbit) would be preferable, with the address stored on the server.',
     testSettings:'Test Settings', manualPriceLabel:'Manual KAS/USD price (fallback)', manualPriceBtn:'Use manual price', resetBtn:'Reset today’s ♡ count',
     footer1:'lov_kas demo by @techbit', footer2:'♡ = $0.05 worth of KAS / Kaspium QR is always displayed', footer3:'Private keys and seed phrases are never entered or stored.',
     installLead:'Want to use Lov♡Kas?',
@@ -429,22 +429,54 @@ function fromBase64Url(token){
   }
 }
 
+const KASPA_B32='qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+
 function makeShareToken(name,address){
-  // Static-demo tokenization: hides the readable Kaspa address from the URL.
-  // This is obfuscation, not cryptographic secrecy.
-  return toBase64Url(JSON.stringify({n:name,a:address}));
+  // Compact static token: UTF-8 display name + 5-bit packed Kaspa payload.
+  // The readable "kaspa:" address is not placed in the URL. This remains obfuscation, not secrecy.
+  const payload=address.startsWith('kaspa:')?address.slice(6):address;
+  const nameBytes=new TextEncoder().encode(name);
+  if(nameBytes.length>63) throw new Error('name too long');
+  const vals=[];
+  for(const ch of payload){
+    const v=KASPA_B32.indexOf(ch);
+    if(v<0) throw new Error('unsupported Kaspa address');
+    vals.push(v);
+  }
+  const out=[nameBytes.length,...nameBytes];
+  let acc=0,bits=0;
+  for(const v of vals){
+    acc=(acc<<5)|v; bits+=5;
+    while(bits>=8){bits-=8;out.push((acc>>bits)&255);acc&=(1<<bits)-1;}
+  }
+  if(bits) out.push((acc<<(8-bits))&255);
+  // Store payload character count so padding bits are unambiguous.
+  out.splice(1+nameBytes.length,0,vals.length);
+  let bin=''; for(const b of out) bin+=String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
 
 function readShareToken(token){
   try{
-    const raw=fromBase64Url(token);
-    const obj=JSON.parse(raw);
-    if(!obj || typeof obj.n!=='string' || typeof obj.a!=='string') return null;
-    if(!obj.a.startsWith('kaspa:')) return null;
-    return {name:obj.n,address:obj.a};
-  }catch(e){
-    return null;
-  }
+    let b64=token.replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length%4)b64+='=';
+    const bin=atob(b64);
+    const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));
+    const nameLen=bytes[0];
+    if(bytes.length<nameLen+2) return null;
+    const name=new TextDecoder().decode(bytes.slice(1,1+nameLen));
+    const charCount=bytes[1+nameLen];
+    const packed=bytes.slice(2+nameLen);
+    let acc=0,bits=0,payload='';
+    for(const b of packed){
+      acc=(acc<<8)|b; bits+=8;
+      while(bits>=5 && payload.length<charCount){
+        bits-=5; payload+=KASPA_B32[(acc>>bits)&31]; acc&=(1<<bits)-1;
+      }
+    }
+    if(payload.length!==charCount) return null;
+    return {name,address:'kaspa:'+payload};
+  }catch(e){return null;}
 }
 
 function parseUrl(){
@@ -460,7 +492,7 @@ function parseUrl(){
   if(decoded){
     state.name=decoded.name;
     state.address=decoded.address;
-    sharedSendOnly = u.searchParams.get('view') === 'send';
+    sharedSendOnly = true;
   }else{
     // Backward compatibility with older demo links.
     if(legacyName) state.name=legacyName;
@@ -629,9 +661,6 @@ function createLink(){
   u.search='';
   const token=makeShareToken(n,a);
   u.searchParams.set('p',token);
-  u.searchParams.set('view','send');
-  u.searchParams.set('lang',currentLang);
-  
 
   document.getElementById('shareUrl').textContent=u.href;
   document.getElementById('postExample').textContent='♡KAS → '+u.href;
