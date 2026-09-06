@@ -279,7 +279,7 @@ const I18N={
     footer1:'lov_kas by @techbit', footer2:'♡＝$0.05相当のKAS / Kaspium用QRを常時表示', footer3:'秘密鍵・シードフレーズは入力・保存しません。',
     installLead:'Lov♡Kasを使ってみませんか？',
     installBtn:'<span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> マイページのURLをゲット',
-    setupUrlCopied:'<span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> マイページのURLをコピーしました',
+    setupUrlCopied:'Lov♡Kas マイページのURLをコピーしました',
     notGenerated:'未生成', generateDone:'専用リンクを生成しました', enterName:'表示名を入力してください', enterAddress:'kaspa: で始まる受取アドレスを入力してください',
     copied:'コピーしました', copyFailed:'コピーできませんでした', invalidPrice:'正しい価格を入力してください', manualApplied:'手動価格を反映しました', resetDone:'リセットしました',
     noAddress:'受取アドレスが未設定です', todayLimit:'今日は20♡までです', sentAlready:'今日はこの相手に送信済みです',
@@ -325,6 +325,10 @@ function setText(id,value){
   const el=document.getElementById(id);
   if(el) el.textContent=value;
 }
+function setHtml(id,value){
+  const el=document.getElementById(id);
+  if(el) el.innerHTML=value;
+}
 function setLang(lang, persist=true){
   currentLang=lang==='en'?'en':'ja';
   document.documentElement.lang=currentLang;
@@ -355,7 +359,7 @@ function setLang(lang, persist=true){
   setText('kaspiumMobile',x.kaspiumMobile);
   setText('kaspiumDesktop',x.kaspiumDesktop);
   setText('resultTitle',x.resultTitle);
-  setText('settingsTitle',x.settingsTitle);
+  setHtml('settingsTitle',x.settingsTitle);
   setText('settingsNotice',x.settingsNotice);
   setText('nameLabel',x.nameLabel);
   setText('addressLabel',x.addressLabel);
@@ -369,7 +373,7 @@ function setLang(lang, persist=true){
   setText('footer2',x.footer2);
   setText('footer3',x.footer3);
   setText('installCtaLead',x.installLead);
-  setText('installCtaBtn',x.installBtn);
+  setHtml('installCtaBtn',x.installBtn);
   setText('qrFive',x.qrFive);
 
   const share=document.getElementById('shareUrl');
