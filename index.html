@@ -137,7 +137,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
         <button type="button" id="langJa" class="active" onclick="setLang('ja')">日本語</button>
         <button type="button" id="langEn" onclick="setLang('en')">English</button>
       </div>
-      <div class="demo">lov_kas DEMO v3.0</div>
+      <div class="demo">lov_kas DEMO v3.1</div>
     </div>
   </div>
 <section id="sendView" class="hidden">
@@ -225,7 +225,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
       <div id="postExample" class="notice">♡KAS → 専用URL</div>
 
       <div class="notice" id="demoUrlNote">
-        このデモでは表示名と受取アドレスを短いトークンに変換し、共有URLは ?p=... のみで生成します。
+        専用URLにはKaspaアドレスを含めません。受取情報はLov♡Kasバックエンドから取得します。
       </div>
     </div>
 
@@ -236,7 +236,6 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
 
 <div id="toast" class="toast"></div>
 
-<script src="./config.js"></script>
 <script>
 const APP_BUILD='15';
 let sharedSendOnly=false;
@@ -269,7 +268,7 @@ const I18N={
     settingsNotice:'ここで表示名とKaspa受取アドレスを設定すると、♡送信用の専用URLが生成されます。この設定画面は受取人本人のみが使用し、専用URLを開いた人には♡送信画面だけが表示されます。',
     nameLabel:'表示名', addressLabel:'Kaspa受取アドレス', createLink:'専用リンクを生成',
     shareUrlLabel:'投稿に貼る専用URL', copy:'コピー', postExampleLabel:'投稿末尾の例', postExample:'♡KAS → 専用URL',
-    demoUrlNote:'このデモでは表示名と受取アドレスを短いトークンに変換し、共有URLは ?p=... のみで生成します。',
+    demoUrlNote:'専用URLにはKaspaアドレスを含めません。受取情報はLov♡Kasバックエンドから取得します。',
     testSettings:'テスト設定', manualPriceLabel:'手動KAS/USD価格（API失敗時）', manualPriceBtn:'手動価格を使用', resetBtn:'今日の♡カウントをリセット',
     footer1:'lov_kas demo by @techbit', footer2:'♡＝$0.05相当のKAS / Kaspium用QRを常時表示', footer3:'秘密鍵・シードフレーズは入力・保存しません。',
     installLead:'Lov♡Kasを使ってみませんか？',
@@ -296,7 +295,7 @@ const I18N={
     settingsNotice:'Set your display name and Kaspa receiving address here to generate a dedicated ♡-send URL. This settings screen is for the recipient only; anyone opening the generated URL will see only the send screen.',
     nameLabel:'Display name', addressLabel:'Kaspa receiving address', createLink:'Generate share link',
     shareUrlLabel:'Share URL for your post', copy:'Copy', postExampleLabel:'Example at the end of a post', postExample:'♡KAS → Share URL',
-    demoUrlNote:'In this demo, the display name and receiving address are packed into a compact token, so the share URL contains only ?p=.... In production, a short URL using only a user ID (for example, lov-kas.example/techbit) would be preferable, with the address stored on the server.',
+    demoUrlNote:'The share URL contains only a recipient ID. The Kaspa address is stored in the Lov♡Kas backend and is not included in the public URL.',
     testSettings:'Test Settings', manualPriceLabel:'Manual KAS/USD price (fallback)', manualPriceBtn:'Use manual price', resetBtn:'Reset today’s ♡ count',
     footer1:'lov_kas demo by @techbit', footer2:'♡ = $0.05 worth of KAS / Kaspium QR is always displayed', footer3:'Private keys and seed phrases are never entered or stored.',
     installLead:'Want to use Lov♡Kas?',
@@ -312,23 +311,6 @@ const I18N={
 };
 
 function enforceFreshBuild(){
-  // Do not force reloads for local file testing.
-  if(location.protocol==='file:') return true;
-
-  const u=new URL(location.href);
-  const current=u.searchParams.get('build');
-
-  if(current!==APP_BUILD){
-    u.searchParams.set('build',APP_BUILD);
-    u.searchParams.set('_fresh',Date.now().toString());
-    location.replace(u.toString());
-    return false;
-  }
-
-  if(u.searchParams.has('_fresh')){
-    u.searchParams.delete('_fresh');
-    history.replaceState(null,'',u.toString());
-  }
   return true;
 }
 
@@ -344,8 +326,6 @@ function setLang(lang, persist=true){
   if(sharedSendOnly){
     const u=new URL(location.href);
     u.searchParams.set('lang',currentLang);
-  u.searchParams.set('build',APP_BUILD);
-    u.searchParams.set('build',APP_BUILD);
     history.replaceState(null,'',u.toString());
   }
 
@@ -481,7 +461,7 @@ function readShareToken(token){
 }
 
 
-const API_BASE = String(window.LOVKAS_API_BASE || '').replace(/\/+$/,'');
+const API_BASE = 'https://lovkas-api.take6583.workers.dev';
 
 function slugHint(name){
   return String(name||'')
@@ -861,8 +841,11 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-if(enforceFreshBuild()){
-parseUrl();
+async function bootLovKas(){
+  if(!enforceFreshBuild()) return;
+
+  parseUrl();
+
   if(window.LOVKAS_RECIPIENT_ID){
     try{
       const recipient=await loadRecipient(window.LOVKAS_RECIPIENT_ID);
@@ -874,15 +857,18 @@ parseUrl();
       toast(currentLang==='ja'?'このLov♡Kasリンクを読み込めませんでした':'Could not load this Lov♡Kas link');
     }
   }
-document.getElementById('nameInput').value=state.name;
-document.getElementById('addressInput').value=state.address;
-loadDaily();
-enforceViewMode();
-setLang(currentLang,false);
-fetchKasPrice();
-setTimeout(updateKaswareStatus,400);
-setTimeout(updateKaswareStatus,1500);
+
+  document.getElementById('nameInput').value=state.name;
+  document.getElementById('addressInput').value=state.address;
+  loadDaily();
+  enforceViewMode();
+  setLang(currentLang,false);
+  fetchKasPrice();
+  setTimeout(updateKaswareStatus,400);
+  setTimeout(updateKaswareStatus,1500);
 }
+
+bootLovKas();
 </script>
 </body>
 </html>
