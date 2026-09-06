@@ -137,7 +137,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
         <button type="button" id="langJa" class="active" onclick="setLang('ja')">日本語</button>
         <button type="button" id="langEn" onclick="setLang('en')">English</button>
       </div>
-      <div class="demo">lov_kas DEMO v2.8</div>
+      <div class="demo">lov_kas DEMO v3.0</div>
     </div>
   </div>
 <section id="sendView" class="hidden">
@@ -236,6 +236,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
 
 <div id="toast" class="toast"></div>
 
+<script src="./config.js"></script>
 <script>
 const APP_BUILD='15';
 let sharedSendOnly=false;
@@ -479,22 +480,88 @@ function readShareToken(token){
   }catch(e){return null;}
 }
 
+
+const API_BASE = String(window.LOVKAS_API_BASE || '').replace(/\/+$/,'');
+
+function slugHint(name){
+  return String(name||'')
+    .normalize('NFKC')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g,'-')
+    .replace(/[^a-z0-9_-]/g,'')
+    .replace(/-+/g,'-')
+    .replace(/^[-_]+|[-_]+$/g,'')
+    .slice(0,32);
+}
+
+async function apiJson(path, options={}){
+  if(!API_BASE) throw new Error('API_NOT_CONFIGURED');
+  const r=await fetch(API_BASE+path,{
+    ...options,
+    headers:{'Content-Type':'application/json', ...(options.headers||{})},
+    cache:'no-store'
+  });
+  let body={};
+  try{ body=await r.json(); }catch(e){}
+  if(!r.ok) throw new Error(body.error || ('HTTP_'+r.status));
+  return body;
+}
+
+async function loadRecipient(id){
+  return apiJson('/api/recipients/'+encodeURIComponent(id));
+}
+
+async function saveRecipient(name,address){
+  const preferred=slugHint(name);
+  const tokenKey='lovkas-edit-token:'+preferred;
+  let editToken='';
+  try{ editToken=localStorage.getItem(tokenKey)||''; }catch(e){}
+
+  // If this browser already owns the preferred ID, update it.
+  if(preferred && editToken){
+    try{
+      const updated=await apiJson('/api/recipients/'+encodeURIComponent(preferred),{
+        method:'PUT',
+        headers:{'Authorization':'Bearer '+editToken},
+        body:JSON.stringify({display_name:name,kaspa_address:address})
+      });
+      return {...updated, edit_token:editToken};
+    }catch(e){
+      // Fall through to create if the old local token is stale.
+    }
+  }
+
+  const created=await apiJson('/api/recipients',{
+    method:'POST',
+    body:JSON.stringify({display_name:name,kaspa_address:address,preferred_id:preferred})
+  });
+  if(created.id && created.edit_token){
+    try{ localStorage.setItem('lovkas-edit-token:'+created.id,created.edit_token); }catch(e){}
+  }
+  return created;
+}
+
 function parseUrl(){
   const u=new URL(location.href);
-  const token=u.searchParams.get('p');
+  const recipientId=u.searchParams.get('id');
+  const legacyToken=u.searchParams.get('p');
   const legacyName=u.searchParams.get('u');
   const legacyAddress=u.searchParams.get('a');
   const langParam=u.searchParams.get('lang');
 
-  let decoded=null;
-  if(token) decoded=readShareToken(token);
+  window.LOVKAS_RECIPIENT_ID = recipientId || '';
 
-  if(decoded){
-    state.name=decoded.name;
-    state.address=decoded.address;
-    sharedSendOnly = true;
+  if(recipientId){
+    sharedSendOnly=true;
+  }else if(legacyToken){
+    const decoded=readShareToken(legacyToken);
+    if(decoded){
+      state.name=decoded.name;
+      state.address=decoded.address;
+      sharedSendOnly=true;
+    }
   }else{
-    // Backward compatibility with older demo links.
     if(legacyName) state.name=legacyName;
     if(legacyAddress && legacyAddress.startsWith('kaspa:')) state.address=legacyAddress;
     sharedSendOnly = u.searchParams.get('view') === 'send' && !!legacyName && !!legacyAddress;
@@ -544,7 +611,6 @@ function renderKaspiumQR(){
 
   q.innerHTML='';
   if(!state.address){
-    uriEl.textContent=t().unsetAddress;
     return;
   }
 
@@ -649,23 +715,30 @@ function confirmHeart(method,tx){
   setTimeout(()=>document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'center'}),80);
 }
 
-function createLink(){
+async function createLink(){
   const n=document.getElementById('nameInput').value.trim();
   const a=document.getElementById('addressInput').value.trim();
   if(!n){toast(t().enterName);return;}
   if(!a.startsWith('kaspa:')){toast(t().enterAddress);return;}
+  if(!API_BASE){toast(currentLang==='ja'?'バックエンドURLが未設定です':'Backend URL is not configured');return;}
+
   state.name=n;
   state.address=a;
 
-  const u=new URL(location.href);
-  u.search='';
-  const token=makeShareToken(n,a);
-  u.searchParams.set('p',token);
+  try{
+    const saved=await saveRecipient(n,a);
+    const u=new URL(location.href);
+    u.search='';
+    u.searchParams.set('id',saved.id);
 
-  document.getElementById('shareUrl').textContent=u.href;
-  document.getElementById('postExample').textContent='♡KAS → '+u.href;
-  updateUI();
-  toast(t().generateDone);
+    document.getElementById('shareUrl').textContent=u.href;
+    document.getElementById('postExample').textContent='♡KAS → '+u.href;
+    updateUI();
+    toast(t().generateDone);
+  }catch(e){
+    console.error(e);
+    toast(currentLang==='ja'?'専用URLの生成に失敗しました':'Could not generate share URL');
+  }
 }
 
 function applyManualPrice(){
@@ -790,6 +863,17 @@ function escapeHtml(s){
 
 if(enforceFreshBuild()){
 parseUrl();
+  if(window.LOVKAS_RECIPIENT_ID){
+    try{
+      const recipient=await loadRecipient(window.LOVKAS_RECIPIENT_ID);
+      state.name=recipient.display_name || 'NAME';
+      state.address=recipient.kaspa_address || '';
+    }catch(e){
+      console.error(e);
+      state.address='';
+      toast(currentLang==='ja'?'このLov♡Kasリンクを読み込めませんでした':'Could not load this Lov♡Kas link');
+    }
+  }
 document.getElementById('nameInput').value=state.name;
 document.getElementById('addressInput').value=state.address;
 loadDaily();
