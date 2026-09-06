@@ -23,8 +23,8 @@ body{min-height:100vh}
 .shell{width:min(620px,100%);margin:auto;padding:18px 15px 52px}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .headerRight{display:flex;align-items:center;gap:8px}
-.langSwitch{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--panel)}
-.langSwitch button{border:0;background:transparent;color:var(--muted);padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800;cursor:pointer}
+.langSwitch{display:flex;flex-wrap:wrap;justify-content:flex-end;border:1px solid var(--line);border-radius:18px;padding:3px;background:var(--panel);max-width:260px}
+.langSwitch button{border:0;background:transparent;color:var(--muted);padding:5px 7px;border-radius:999px;font-size:10px;font-weight:800;cursor:pointer}
 .langSwitch button.active{background:var(--cyan);color:#061012}
 @media(max-width:520px){.headerRight{gap:5px}.demo{display:none}}
 .brand{font-size:29px;font-weight:900;letter-spacing:-1px}
@@ -145,8 +145,10 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
       <div class="langSwitch">
         <button type="button" id="langJa" class="active" onclick="setLang('ja')">日本語</button>
         <button type="button" id="langEn" onclick="setLang('en')">English</button>
+        <button type="button" id="langKo" onclick="setLang('ko')">한국어</button>
+        <button type="button" id="langEs" onclick="setLang('es')">Español</button>
       </div>
-      <div class="demo">Lov_Kas_v3.7</div>
+      <div class="demo">Lov_Kas_v3.8</div>
     </div>
   </div>
 <section id="sendView">
@@ -276,19 +278,20 @@ const I18N={
     settingsTitle:'<span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> マイページ',
     settingsNotice:'ここで表示名とKaspa受取アドレスを設定すると、♡送信用の専用URLが生成されます。この設定画面は受取人本人のみが使用し、専用URLを開いた人には♡送信画面だけが表示されます。',
     nameLabel:'表示名', addressLabel:'Kaspa受取アドレス', createLink:'専用リンクを生成',
-    shareUrlLabel:'投稿に貼る専用URL', copy:'コピー', postExampleLabel:'投稿末尾の例', postExample:'♡KAS → 専用URL',
+    shareUrlLabel:'投稿に貼る応援テキスト', copy:'コピー',
     demoUrlNote:'専用URLにはKaspaアドレスを含めません。受取情報はLov♡Kasバックエンドから取得します。',
-    testSettings:'テスト設定', manualPriceLabel:'手動KAS/USD価格（API失敗時）', manualPriceBtn:'手動価格を使用', resetBtn:'今日の♡カウントをリセット',
     footer1:'lov_kas by @techbit', footer2:'♡＝$0.05相当のKAS / Kaspium用QRを常時表示', footer3:'秘密鍵・シードフレーズは入力・保存しません。',
     installLead:'Lov♡Kasを使ってみませんか？',
     installBtn:'<span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> マイページのURLをゲット',
     setupUrlCopied:'Lov♡Kas マイページのURLをコピーしました',
     notGenerated:'未生成', generateDone:'専用リンクを生成しました', enterName:'表示名を入力してください', enterAddress:'kaspa: で始まる受取アドレスを入力してください',
-    copied:'コピーしました', copyFailed:'コピーできませんでした', invalidPrice:'正しい価格を入力してください', manualApplied:'手動価格を反映しました', resetDone:'リセットしました',
+    copied:'コピーしました', copyFailed:'コピーできませんでした',
     noAddress:'受取アドレスが未設定です', todayLimit:'今日は20♡までです', sentAlready:'今日はこの相手に送信済みです',
     kaswareNotFound:'KasWare拡張が見つかりません', kaswareReady:'接続待ち', kaswareConnecting:'接続中…', kaswareConnected:'接続済み',
     kaswareNoApi:'KasWare送金APIが利用できません', sendCancelled:'送信をキャンセル、またはエラーが発生しました', qrFive:'♡＝5¢', unsetAddress:'受取アドレス未設定',
-    sent:n=>`${n}へ♡を送りました`, method:'方法', tx:'TX'
+    sent:n=>`${n}へ♡を送りました`, method:'方法', tx:'TX',
+    backendMissing:'バックエンドURLが未設定です', linkFailed:'専用URLの生成に失敗しました',
+    sns1:'♡ KASで応援する｜Lov♡Kas', sns2:'1♡＝$0.05相当のKAS'
   },
   en:{
     tagline:'Share your support with Lov_Kas.',
@@ -303,19 +306,76 @@ const I18N={
     settingsTitle:'Get Started with <span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span>',
     settingsNotice:'Set your display name and Kaspa receiving address here to generate a dedicated ♡-send URL. This settings screen is for the recipient only; anyone opening the generated URL will see only the send screen.',
     nameLabel:'Display name', addressLabel:'Kaspa receiving address', createLink:'Generate share link',
-    shareUrlLabel:'Share URL for your post', copy:'Copy', postExampleLabel:'Example at the end of a post', postExample:'♡KAS → Share URL',
+    shareUrlLabel:'Ready-to-paste support text', copy:'Copy',
     demoUrlNote:'The share URL contains only a recipient ID. The Kaspa address is stored in the Lov♡Kas backend and is not included in the public URL.',
-    testSettings:'Test Settings', manualPriceLabel:'Manual KAS/USD price (fallback)', manualPriceBtn:'Use manual price', resetBtn:'Reset today’s ♡ count',
     footer1:'lov_kas by @techbit', footer2:'♡ = $0.05 worth of KAS / Kaspium QR is always displayed', footer3:'Private keys and seed phrases are never entered or stored.',
     installLead:'Want to use Lov♡Kas?',
     installBtn:'Get Started with <span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span>',
     setupUrlCopied:'Lov♡Kas setup URL copied',
     notGenerated:'Not generated', generateDone:'Share link generated', enterName:'Enter a display name', enterAddress:'Enter a Kaspa address beginning with kaspa:',
-    copied:'Copied', copyFailed:'Could not copy', invalidPrice:'Enter a valid price', manualApplied:'Manual price applied', resetDone:'Reset complete',
+    copied:'Copied', copyFailed:'Could not copy',
     noAddress:'Recipient address is not set', todayLimit:'Daily limit reached', sentAlready:'You already sent a ♡ to this recipient today',
     kaswareNotFound:'KasWare extension not found', kaswareReady:'Ready to connect', kaswareConnecting:'Connecting…', kaswareConnected:'Connected',
     kaswareNoApi:'KasWare send API is unavailable', sendCancelled:'Transaction cancelled or an error occurred', qrFive:'♡ = 5¢', unsetAddress:'Recipient address not set',
-    sent:n=>`♡ sent to ${n}`, method:'Method', tx:'TX'
+    sent:n=>`♡ sent to ${n}`, method:'Method', tx:'TX',
+    backendMissing:'Backend URL is not configured', linkFailed:'Could not generate share URL',
+    sns1:'♡ Support with KAS｜Lov♡Kas', sns2:'1♡ = $0.05 worth of KAS'
+  },
+  ko:{
+    tagline:'Lov_Kas로 마음을 전해보세요.',
+    support:n=>`${n}님을 응원해요!`,
+    kaswareHelp:'받는 주소와 ♡＝5¢ 상당의 KAS 금액을 KasWare로 전달합니다. 지갑에서는 내용을 확인하고 최종 승인만 하면 됩니다.',
+    kaswareSend:'KasWare로 ♡ 보내기',
+    kaspiumHelp:'QR을 통해 받는 주소와 ♡＝5¢ 상당의 KAS 수량을 Kaspium으로 전달합니다. 내용을 확인한 뒤 Kaspium에서 최종 전송을 승인해 주세요.',
+    kaspiumState:'♡＝5¢ 상당 KAS QR을 항상 표시',
+    kaspiumMobile:'스마트폰: QR 길게 누르기 → Kaspium으로 열기',
+    kaspiumDesktop:'PC / 다른 기기: Kaspium으로 QR 스캔',
+    resultTitle:'♡ 전송 완료',
+    settingsTitle:'<span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> 마이페이지',
+    settingsNotice:'여기에서 표시 이름과 Kaspa 수신 주소를 설정하면 ♡ 전송용 전용 URL이 생성됩니다. 이 설정 화면은 수신자 본인만 사용하며, 생성된 URL을 연 사람에게는 응원 전송 화면만 표시됩니다.',
+    nameLabel:'표시 이름', addressLabel:'Kaspa 수신 주소', createLink:'전용 링크 생성',
+    shareUrlLabel:'게시물에 붙일 응원 문구', copy:'복사',
+    demoUrlNote:'전용 URL에는 Kaspa 주소가 포함되지 않습니다. 수신 정보는 Lov♡Kas 백엔드에서 불러옵니다.',
+    footer1:'lov_kas by @techbit', footer2:'♡＝$0.05 상당 KAS / Kaspium QR 항상 표시', footer3:'개인 키와 시드 문구는 입력하거나 저장하지 않습니다.',
+    installLead:'Lov♡Kas를 사용해 보시겠어요?',
+    installBtn:'<span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> 시작하기',
+    setupUrlCopied:'Lov♡Kas 마이페이지 URL을 복사했습니다',
+    notGenerated:'미생성', generateDone:'전용 링크를 생성했습니다', enterName:'표시 이름을 입력해 주세요', enterAddress:'kaspa: 로 시작하는 수신 주소를 입력해 주세요',
+    copied:'복사했습니다', copyFailed:'복사하지 못했습니다',
+    noAddress:'수신 주소가 설정되지 않았습니다', todayLimit:'오늘의 한도에 도달했습니다', sentAlready:'오늘 이미 이 사용자에게 ♡를 보냈습니다',
+    kaswareNotFound:'KasWare 확장 프로그램을 찾을 수 없습니다', kaswareReady:'연결 대기', kaswareConnecting:'연결 중…', kaswareConnected:'연결됨',
+    kaswareNoApi:'KasWare 전송 API를 사용할 수 없습니다', sendCancelled:'전송이 취소되었거나 오류가 발생했습니다', qrFive:'♡＝5¢', unsetAddress:'수신 주소 미설정',
+    sent:n=>`${n}님에게 ♡를 보냈습니다`, method:'방법', tx:'TX',
+    backendMissing:'백엔드 URL이 설정되지 않았습니다', linkFailed:'전용 URL 생성에 실패했습니다',
+    sns1:'♡ KAS로 응원하기｜Lov♡Kas', sns2:'1♡＝$0.05 상당 KAS'
+  },
+  es:{
+    tagline:'Comparte tu apoyo con Lov_Kas.',
+    support:n=>`¡Apoya a ${n}!`,
+    kaswareHelp:'Lov_Kas envía a KasWare la dirección del destinatario y la cantidad de KAS equivalente a 5¢. En la cartera solo tienes que revisar y aprobar la transacción.',
+    kaswareSend:'Enviar ♡ con KasWare',
+    kaspiumHelp:'Usa el QR para pasar a Kaspium la dirección del destinatario y la cantidad de KAS equivalente a 5¢. Revisa los datos y confirma el envío final en Kaspium.',
+    kaspiumState:'Muestra siempre un QR de ♡ = 5¢ en KAS',
+    kaspiumMobile:'Móvil: mantén pulsado el QR → abrir con Kaspium',
+    kaspiumDesktop:'PC / otro dispositivo: escanea el QR con Kaspium',
+    resultTitle:'♡ Enviado',
+    settingsTitle:'Empieza con <span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span>',
+    settingsNotice:'Configura aquí tu nombre visible y la dirección de recepción de Kaspa para generar una URL dedicada para enviar ♡. Esta pantalla de configuración es solo para el destinatario; quien abra la URL generada verá únicamente la pantalla de apoyo.',
+    nameLabel:'Nombre visible', addressLabel:'Dirección de recepción Kaspa', createLink:'Generar enlace',
+    shareUrlLabel:'Texto de apoyo listo para publicar', copy:'Copiar',
+    demoUrlNote:'La URL pública solo contiene un ID de destinatario. La dirección de Kaspa se guarda en el backend de Lov♡Kas y no aparece en la URL pública.',
+    footer1:'lov_kas by @techbit', footer2:'♡ = $0.05 en KAS / QR de Kaspium siempre visible', footer3:'Nunca se introducen ni se guardan claves privadas o frases semilla.',
+    installLead:'¿Quieres usar Lov♡Kas?',
+    installBtn:'Empezar con <span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span>',
+    setupUrlCopied:'URL de Lov♡Kas copiada',
+    notGenerated:'Sin generar', generateDone:'Enlace generado', enterName:'Introduce un nombre visible', enterAddress:'Introduce una dirección Kaspa que empiece por kaspa:',
+    copied:'Copiado', copyFailed:'No se pudo copiar',
+    noAddress:'La dirección del destinatario no está configurada', todayLimit:'Has alcanzado el límite diario', sentAlready:'Ya enviaste un ♡ a este destinatario hoy',
+    kaswareNotFound:'No se encontró la extensión KasWare', kaswareReady:'Listo para conectar', kaswareConnecting:'Conectando…', kaswareConnected:'Conectado',
+    kaswareNoApi:'La API de envío de KasWare no está disponible', sendCancelled:'La transacción se canceló o se produjo un error', qrFive:'♡ = 5¢', unsetAddress:'Dirección no configurada',
+    sent:n=>`♡ enviado a ${n}`, method:'Método', tx:'TX',
+    backendMissing:'La URL del backend no está configurada', linkFailed:'No se pudo generar la URL',
+    sns1:'♡ Apoya con KAS｜Lov♡Kas', sns2:'1♡ = $0.05 en KAS'
   }
 };
 
@@ -333,7 +393,8 @@ function setHtml(id,value){
   if(el) el.innerHTML=value;
 }
 function setLang(lang, persist=true){
-  currentLang=lang==='en'?'en':'ja';
+  const supported=['ja','en','ko','es'];
+  currentLang=supported.includes(lang)?lang:'ja';
   document.documentElement.lang=currentLang;
 
   if(sharedSendOnly){
@@ -342,15 +403,15 @@ function setLang(lang, persist=true){
     history.replaceState(null,'',u.toString());
   }
 
-  // Save user preference for normal/owner view.
   if(persist && !sharedSendOnly){
     try{ localStorage.setItem('lov-kas-lang', currentLang); }catch(e){}
   }
 
-  const jaBtn=document.getElementById('langJa');
-  const enBtn=document.getElementById('langEn');
-  if(jaBtn) jaBtn.classList.toggle('active',currentLang==='ja');
-  if(enBtn) enBtn.classList.toggle('active',currentLang==='en');
+  ['ja','en','ko','es'].forEach(code=>{
+    const id='lang'+code.charAt(0).toUpperCase()+code.slice(1);
+    const btn=document.getElementById(id);
+    if(btn) btn.classList.toggle('active',currentLang===code);
+  });
 
   const x=t();
   setText('tagline',x.tagline);
@@ -378,7 +439,7 @@ function setLang(lang, persist=true){
   setText('qrFive',x.qrFive);
 
   const share=document.getElementById('shareUrl');
-  if(share && (share.textContent.trim()==='未生成' || share.textContent.trim()==='Not generated')){
+  if(share && ['未生成','Not generated','미생성','Sin generar'].includes(share.textContent.trim())){
     share.textContent=x.notGenerated;
   }
 
@@ -558,12 +619,12 @@ function parseUrl(){
     sharedSendOnly = u.searchParams.get('view') === 'send' && !!legacyName && !!legacyAddress;
   }
 
-  if(langParam==='en'||langParam==='ja'){
+  if(['ja','en','ko','es'].includes(langParam)){
     currentLang=langParam;
   }else{
     try{
       const saved=localStorage.getItem('lov-kas-lang');
-      if(saved==='en'||saved==='ja') currentLang=saved;
+      if(['ja','en','ko','es'].includes(saved)) currentLang=saved;
     }catch(e){}
   }
 }
@@ -711,7 +772,7 @@ async function createLink(){
   const a=document.getElementById('addressInput').value.trim();
   if(!n){toast(t().enterName);return;}
   if(!a.startsWith('kaspa:')){toast(t().enterAddress);return;}
-  if(!API_BASE){toast(currentLang==='ja'?'バックエンドURLが未設定です':'Backend URL is not configured');return;}
+  if(!API_BASE){toast(t().backendMissing);return;}
 
   state.name=n;
   state.address=a;
@@ -723,15 +784,15 @@ async function createLink(){
     u.searchParams.set('lang',currentLang);
 
     const snsFooter =
-    '♡ KASで応援する｜Lov♡Kas\n' +
-    '1♡＝$0.05相当のKAS\n' +
+    t().sns1+'\n' +
+    t().sns2+'\n' +
     u.href;
   document.getElementById('shareUrl').textContent=snsFooter;
     updateUI();
     toast(t().generateDone);
   }catch(e){
     console.error(e);
-    toast(currentLang==='ja'?'専用URLの生成に失敗しました':'Could not generate share URL');
+    toast(t().linkFailed);
   }
 }
 
