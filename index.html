@@ -366,8 +366,6 @@ function setLang(lang, persist=true){
   setText('createLinkBtn',x.createLink);
   setText('shareUrlLabel',x.shareUrlLabel);
   setText('copyShareBtn',x.copy);
-  setText('postExampleLabel',x.postExampleLabel);
-  setText('postExample',x.postExample);
   setText('demoUrlNote',x.demoUrlNote);
   setText('footer1',x.footer1);
   setText('footer2',x.footer2);
@@ -721,8 +719,11 @@ async function createLink(){
     u.search='';
     u.searchParams.set('id',saved.id);
 
-    document.getElementById('shareUrl').textContent=u.href;
-    document.getElementById('postExample').textContent='♡KAS → '+u.href;
+    const snsFooter =
+    '♡ KASで応援する｜Lov♡Kas\n' +
+    '1♡＝$0.05相当のKAS\n' +
+    u.href;
+  document.getElementById('shareUrl').textContent=snsFooter;
     updateUI();
     toast(t().generateDone);
   }catch(e){
