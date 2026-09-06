@@ -137,7 +137,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
         <button type="button" id="langJa" class="active" onclick="setLang('ja')">日本語</button>
         <button type="button" id="langEn" onclick="setLang('en')">English</button>
       </div>
-      <div class="demo">lov_kas DEMO v2.6</div>
+      <div class="demo">lov_kas DEMO v2.7</div>
     </div>
   </div>
 <section id="sendView" class="hidden">
@@ -225,7 +225,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
       <div id="postExample" class="notice">♡KAS → 専用URL</div>
 
       <div class="notice" id="demoUrlNote">
-        このデモではURLのクエリに表示名と受取アドレスを含めます。
+        このデモでは表示名と受取アドレスをトークン化し、KaspaアドレスをURL上に直接表示しません。
       </div>
     </div>
 
@@ -268,7 +268,7 @@ const I18N={
     settingsNotice:'ここで表示名とKaspa受取アドレスを設定すると、♡送信用の専用URLが生成されます。この設定画面は受取人本人のみが使用し、専用URLを開いた人には♡送信画面だけが表示されます。',
     nameLabel:'表示名', addressLabel:'Kaspa受取アドレス', createLink:'専用リンクを生成',
     shareUrlLabel:'投稿に貼る専用URL', copy:'コピー', postExampleLabel:'投稿末尾の例', postExample:'♡KAS → 専用URL',
-    demoUrlNote:'このデモではURLのクエリに表示名と受取アドレスを含めます。',
+    demoUrlNote:'このデモでは表示名と受取アドレスをトークン化し、KaspaアドレスをURL上に直接表示しません。',
     testSettings:'テスト設定', manualPriceLabel:'手動KAS/USD価格（API失敗時）', manualPriceBtn:'手動価格を使用', resetBtn:'今日の♡カウントをリセット',
     footer1:'lov_kas demo by @techbit', footer2:'♡＝$0.05相当のKAS / Kaspium用QRを常時表示', footer3:'秘密鍵・シードフレーズは入力・保存しません。',
     installLead:'Lov♡Kasを使ってみませんか？',
@@ -295,7 +295,7 @@ const I18N={
     settingsNotice:'Set your display name and Kaspa receiving address here to generate a dedicated ♡-send URL. This settings screen is for the recipient only; anyone opening the generated URL will see only the send screen.',
     nameLabel:'Display name', addressLabel:'Kaspa receiving address', createLink:'Generate share link',
     shareUrlLabel:'Share URL for your post', copy:'Copy', postExampleLabel:'Example at the end of a post', postExample:'♡KAS → Share URL',
-    demoUrlNote:'In this demo, the display name and receiving address are included in the URL query. In production, a short URL using only a user ID (for example, lov-kas.example/techbit) would be preferable, with the address stored on the server.',
+    demoUrlNote:'In this demo, the display name and receiving address are tokenized so the Kaspa address is not shown directly in the URL. In production, a short URL using only a user ID (for example, lov-kas.example/techbit) would be preferable, with the address stored on the server.',
     testSettings:'Test Settings', manualPriceLabel:'Manual KAS/USD price (fallback)', manualPriceBtn:'Use manual price', resetBtn:'Reset today’s ♡ count',
     footer1:'lov_kas demo by @techbit', footer2:'♡ = $0.05 worth of KAS / Kaspium QR is always displayed', footer3:'Private keys and seed phrases are never entered or stored.',
     installLead:'Want to use Lov♡Kas?',
@@ -409,26 +409,71 @@ function saveDaily(){
 }
 function receiverKey(){ return state.address || '__none__'; }
 
+
+function toBase64Url(str){
+  const bytes=new TextEncoder().encode(str);
+  let bin='';
+  bytes.forEach(b=>bin+=String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function fromBase64Url(token){
+  try{
+    let b64=token.replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length%4) b64+='=';
+    const bin=atob(b64);
+    const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }catch(e){
+    return '';
+  }
+}
+
+function makeShareToken(name,address){
+  // Static-demo tokenization: hides the readable Kaspa address from the URL.
+  // This is obfuscation, not cryptographic secrecy.
+  return toBase64Url(JSON.stringify({n:name,a:address}));
+}
+
+function readShareToken(token){
+  try{
+    const raw=fromBase64Url(token);
+    const obj=JSON.parse(raw);
+    if(!obj || typeof obj.n!=='string' || typeof obj.a!=='string') return null;
+    if(!obj.a.startsWith('kaspa:')) return null;
+    return {name:obj.n,address:obj.a};
+  }catch(e){
+    return null;
+  }
+}
+
 function parseUrl(){
   const u=new URL(location.href);
-  const n=u.searchParams.get('u');
-  const a=u.searchParams.get('a');
+  const token=u.searchParams.get('p');
+  const legacyName=u.searchParams.get('u');
+  const legacyAddress=u.searchParams.get('a');
   const langParam=u.searchParams.get('lang');
 
-  sharedSendOnly = u.searchParams.get('view') === 'send' && !!n && !!a;
+  let decoded=null;
+  if(token) decoded=readShareToken(token);
 
-  if(n) state.name=n;
-  if(a && a.startsWith('kaspa:')) state.address=a;
+  if(decoded){
+    state.name=decoded.name;
+    state.address=decoded.address;
+    sharedSendOnly = u.searchParams.get('view') === 'send';
+  }else{
+    // Backward compatibility with older demo links.
+    if(legacyName) state.name=legacyName;
+    if(legacyAddress && legacyAddress.startsWith('kaspa:')) state.address=legacyAddress;
+    sharedSendOnly = u.searchParams.get('view') === 'send' && !!legacyName && !!legacyAddress;
+  }
 
-  // Shared URL language is authoritative.
-  if(sharedSendOnly && (langParam==='en' || langParam==='ja')){
-    currentLang=langParam;
-  }else if(langParam==='en' || langParam==='ja'){
+  if(langParam==='en'||langParam==='ja'){
     currentLang=langParam;
   }else{
     try{
       const saved=localStorage.getItem('lov-kas-lang');
-      if(saved==='en' || saved==='ja') currentLang=saved;
+      if(saved==='en'||saved==='ja') currentLang=saved;
     }catch(e){}
   }
 }
@@ -582,8 +627,8 @@ function createLink(){
 
   const u=new URL(location.href);
   u.search='';
-  u.searchParams.set('u',n);
-  u.searchParams.set('a',a);
+  const token=makeShareToken(n,a);
+  u.searchParams.set('p',token);
   u.searchParams.set('view','send');
   u.searchParams.set('lang',currentLang);
   
