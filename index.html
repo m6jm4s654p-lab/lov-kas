@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>♡KAS / lov_kas Demo</title>
+<title>♡KAS / lov_kas</title>
 <!-- Social preview / OGP -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Lov♡Kas">
@@ -123,6 +123,12 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
 .techbitCredit img{width:132px;height:42px;object-fit:contain;object-position:right center}
 @media(max-width:520px){.techbitCredit img{width:112px;height:36px}.techbitCredit{font-size:8px}}
 
+
+.lovkas-wordmark{font-weight:900;letter-spacing:-.02em;white-space:nowrap}
+.lovkas-wordmark .lov-word{color:#e14f9a}
+.lovkas-wordmark .heart-word{color:#ff5b78}
+.lovkas-wordmark .kas-word{color:#49b9ad}
+
 </style>
 </head>
 <body>
@@ -137,7 +143,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
         <button type="button" id="langJa" class="active" onclick="setLang('ja')">日本語</button>
         <button type="button" id="langEn" onclick="setLang('en')">English</button>
       </div>
-      <div class="demo">lov_kas DEMO v3.1</div>
+      <div class="demo">lov_kas</div>
     </div>
   </div>
 <section id="sendView" class="hidden">
@@ -188,7 +194,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
 
     <div class="card installCta" id="installCta">
       <div class="ctaLead" id="installCtaLead">Lov♡Kasを使ってみませんか？</div>
-      <button class="btn ghost" id="installCtaBtn" onclick="getRecipientSetupUrl()">Lov♡Kas マイページページのURLをゲット</button>
+      <button class="btn ghost" id="installCtaBtn" onclick="getRecipientSetupUrl()"><span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> マイページのURLをゲット</button>
     </div>
 
     <div id="resultCard" class="card hidden">
@@ -203,7 +209,7 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);ba
 
   <section id="createView">
     <div class="card">
-      <h2 id="settingsTitle">Lov♡Kas マイページ</h2>
+      <h2 id="settingsTitle"><span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> マイページ</h2>
       <div class="notice">
         <span id="settingsNotice">ここで表示名とKaspa受取アドレスを設定すると、♡送信用の専用URLが生成されます。この設定画面は受取人本人のみが使用し、専用URLを開いた人には♡送信画面だけが表示されます。</span>
       </div>
@@ -264,16 +270,16 @@ const I18N={
     kaspiumMobile:'スマートフォン：QRを長押し → Kaspiumで開く',
     kaspiumDesktop:'PC / 別端末：KaspiumでQRをスキャン',
     resultTitle:'♡ 送信完了',
-    settingsTitle:'Lov♡Kas マイページ',
+    settingsTitle:'<span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> マイページ',
     settingsNotice:'ここで表示名とKaspa受取アドレスを設定すると、♡送信用の専用URLが生成されます。この設定画面は受取人本人のみが使用し、専用URLを開いた人には♡送信画面だけが表示されます。',
     nameLabel:'表示名', addressLabel:'Kaspa受取アドレス', createLink:'専用リンクを生成',
     shareUrlLabel:'投稿に貼る専用URL', copy:'コピー', postExampleLabel:'投稿末尾の例', postExample:'♡KAS → 専用URL',
     demoUrlNote:'専用URLにはKaspaアドレスを含めません。受取情報はLov♡Kasバックエンドから取得します。',
     testSettings:'テスト設定', manualPriceLabel:'手動KAS/USD価格（API失敗時）', manualPriceBtn:'手動価格を使用', resetBtn:'今日の♡カウントをリセット',
-    footer1:'lov_kas demo by @techbit', footer2:'♡＝$0.05相当のKAS / Kaspium用QRを常時表示', footer3:'秘密鍵・シードフレーズは入力・保存しません。',
+    footer1:'lov_kas by @techbit', footer2:'♡＝$0.05相当のKAS / Kaspium用QRを常時表示', footer3:'秘密鍵・シードフレーズは入力・保存しません。',
     installLead:'Lov♡Kasを使ってみませんか？',
-    installBtn:'Lov♡Kas マイページページのURLをゲット',
-    setupUrlCopied:'Lov♡Kas マイページページのURLをコピーしました',
+    installBtn:'<span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> マイページのURLをゲット',
+    setupUrlCopied:'<span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span> マイページのURLをコピーしました',
     notGenerated:'未生成', generateDone:'専用リンクを生成しました', enterName:'表示名を入力してください', enterAddress:'kaspa: で始まる受取アドレスを入力してください',
     copied:'コピーしました', copyFailed:'コピーできませんでした', invalidPrice:'正しい価格を入力してください', manualApplied:'手動価格を反映しました', resetDone:'リセットしました',
     noAddress:'受取アドレスが未設定です', todayLimit:'今日は20♡までです', sentAlready:'今日はこの相手に送信済みです',
@@ -291,15 +297,15 @@ const I18N={
     kaspiumMobile:'Smartphone: press and hold the QR → open with Kaspium',
     kaspiumDesktop:'PC / another device: scan the QR with Kaspium',
     resultTitle:'♡ Sent',
-    settingsTitle:'Get Started with Lov♡Kas',
+    settingsTitle:'Get Started with <span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span>',
     settingsNotice:'Set your display name and Kaspa receiving address here to generate a dedicated ♡-send URL. This settings screen is for the recipient only; anyone opening the generated URL will see only the send screen.',
     nameLabel:'Display name', addressLabel:'Kaspa receiving address', createLink:'Generate share link',
     shareUrlLabel:'Share URL for your post', copy:'Copy', postExampleLabel:'Example at the end of a post', postExample:'♡KAS → Share URL',
     demoUrlNote:'The share URL contains only a recipient ID. The Kaspa address is stored in the Lov♡Kas backend and is not included in the public URL.',
     testSettings:'Test Settings', manualPriceLabel:'Manual KAS/USD price (fallback)', manualPriceBtn:'Use manual price', resetBtn:'Reset today’s ♡ count',
-    footer1:'lov_kas demo by @techbit', footer2:'♡ = $0.05 worth of KAS / Kaspium QR is always displayed', footer3:'Private keys and seed phrases are never entered or stored.',
+    footer1:'lov_kas by @techbit', footer2:'♡ = $0.05 worth of KAS / Kaspium QR is always displayed', footer3:'Private keys and seed phrases are never entered or stored.',
     installLead:'Want to use Lov♡Kas?',
-    installBtn:'Get Started with Lov♡Kas',
+    installBtn:'Get Started with <span class="lovkas-wordmark"><span class="lov-word">Lov</span><span class="heart-word">♡</span><span class="kas-word">Kas</span></span>',
     setupUrlCopied:'Lov♡Kas setup URL copied',
     notGenerated:'Not generated', generateDone:'Share link generated', enterName:'Enter a display name', enterAddress:'Enter a Kaspa address beginning with kaspa:',
     copied:'Copied', copyFailed:'Could not copy', invalidPrice:'Enter a valid price', manualApplied:'Manual price applied', resetDone:'Reset complete',
